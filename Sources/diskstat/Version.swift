@@ -4,4 +4,4 @@
 //
 // The .app bundle reports CFBundleShortVersionString at runtime and this is
 // only the fallback for running the binary directly.
-let generatedVersion = "1.0.5"
+let generatedVersion = "1.0.6"
