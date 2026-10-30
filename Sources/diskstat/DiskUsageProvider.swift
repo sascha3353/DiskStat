@@ -40,7 +40,15 @@ final class DiskUsageProvider {
         let disks = urls.compactMap { diskUsage(for: $0) }
 
         return disks.sorted { lhs, rhs in
-            lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
+            // The volume macOS is running from always goes first, so the menu
+            // bar pie and the first row are the same disk no matter what the
+            // other volumes are called. Everything else sorts by name below it.
+            let lhsIsSystem = lhs.mountURL.standardizedFileURL.path == "/"
+            let rhsIsSystem = rhs.mountURL.standardizedFileURL.path == "/"
+            if lhsIsSystem != rhsIsSystem {
+                return lhsIsSystem
+            }
+            return lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
         }
     }
 
