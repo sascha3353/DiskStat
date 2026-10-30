@@ -200,6 +200,13 @@ final class DiskMenuController: NSObject, NSApplicationDelegate, NSMenuDelegate 
         requestNotificationAuthorization()
         provider.refreshDiskMetadataInBackground()
 
+        // The clean log is only written by a finished clean, so on a fresh
+        // install the file is absent and "Show Clean Log…" stays disabled.
+        // Touching an empty file up front means the menu item is always
+        // available — opening it shows a blank log until the first clean has
+        // something to record.
+        ensureCleanLogExists()
+
         // The timer deliberately does NOT rebuild the menu: `menuNeedsUpdate`
         // already rebuilds it on every open, and doing it here would tear down
         // the menu while the user is interacting with it — for a menu that is
@@ -473,6 +480,26 @@ final class DiskMenuController: NSObject, NSApplicationDelegate, NSMenuDelegate 
         }
 
         NSSound.beep()
+    }
+
+    /// Creates an empty clean log if one does not already exist.
+    ///
+    /// The log is written only by a finished clean, so without this the file is
+    /// absent on a fresh install and "Show Clean Log…" stays disabled until the
+    /// first clean completes. An empty file is harmless — the first real clean
+    /// appends its record on top of it via `DiskCleaner.appendToLog`.
+    private func ensureCleanLogExists() {
+        guard !FileManager.default.fileExists(atPath: DiskCleaner.logURL.path) else { return }
+
+        do {
+            try FileManager.default.createDirectory(
+                at: DiskCleaner.logURL.deletingLastPathComponent(),
+                withIntermediateDirectories: true
+            )
+            try Data().write(to: DiskCleaner.logURL)
+        } catch {
+            print("Failed to create clean log at \(DiskCleaner.logURL.path): \(error.localizedDescription)")
+        }
     }
 
     /// Opens the clean log.
